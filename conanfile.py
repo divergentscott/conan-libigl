@@ -1,8 +1,13 @@
+import re
 from conans import ConanFile, CMake, tools
 
 COMMIT_ID = None
 
 _package_version = COMMIT_ID if COMMIT_ID is not None else "git"
+if COMMIT_ID and re.match(r"^v\d", _package_version):
+    # COMMIT_ID is something like "v2.0.0"
+    # I drop the 'v' so that the package name will be: libigl/2.0.0
+    _package_version = COMMIT_ID[1:]
 
 _package_options = {
     "static_library": [True, False],
