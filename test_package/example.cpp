@@ -10,8 +10,14 @@
 int main()
 {
     using namespace Eigen;
-    MatrixXd V;
-    MatrixXi F;
+    MatrixXd V(3, 3);
+
+    V << 0, 0, 0,
+        1, 1, 0,
+        -1, 1, 0;
+
+    MatrixXi F(1, 3);
+    F << 0, 1, 2;
 
     // Compute integral of Gaussian curvature
     VectorXd K;
