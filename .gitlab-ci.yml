@@ -67,7 +67,7 @@ clang-6.0:
     <<: *build-template
 
 clang-7.0:
-    image: conanio/clang70
+    image: conanio/clang7
     variables:
         CONAN_CLANG_VERSIONS: "7.0"
     <<: *build-template
