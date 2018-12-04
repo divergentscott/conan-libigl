@@ -46,7 +46,7 @@ class LibiglConan(ConanFile):
     options = _package_options
     default_options = _package_default_options
 
-    # generators = "cmake"
+    generators = "cmake"
 
     requires = ("eigen/3.3.5@conan/stable",)
 
@@ -57,6 +57,15 @@ class LibiglConan(ConanFile):
         cid = COMMIT_ID or self.options.commit_id
         if cid:
             git.checkout(COMMIT_ID)
+
+        tools.replace_in_file("CMakeLists.txt",
+                              "project(libigl)",
+                              """project(libigl)
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+conan_basic_setup()
+# libIGL must fine the Eigen3 library imported by conan
+# otherwise it downloads a own copy from internet
+find_package(Eigen3 REQUIRED) """)
 
     def _configure_cmake(self):
         cmake = CMake(self)
@@ -106,5 +115,6 @@ class LibiglConan(ConanFile):
     def package_info(self):
         self.cpp_info.cppflags = ["-pthread"]
         if self.options.static_library:
+            self.cpp_info.libdirs = ["lib"]
             self.cpp_info.libs = ["libigl.a"]
             self.cpp_info.cppflags += ["-DIGL_STATIC_LIBRARY"]
