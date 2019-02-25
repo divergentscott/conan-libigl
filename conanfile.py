@@ -35,11 +35,13 @@ class LibiglConan(ConanFile):
 
     homepage = "https://libigl.github.io/"
     description = """libigl is a simple C++ geometry processing library.
-                     We have a wide functionality including construction of sparse discrete differential
-                     geometry operators and finite-elements matrices such as the cotangent Laplacian and
-                     diagonalized mass matrix, simple facet and edge-based topology data structures,
-                     mesh-viewing utilities for OpenGL and GLSL, and many core functions for matrix
-                     manipulation which make Eigen feel a lot more like MATLAB."""
+
+We have a wide functionality including construction of sparse discrete
+differential geometry operators and finite-elements matrices such as the
+cotangent Laplacian and diagonalized mass matrix, simple facet and edge-based
+topology data structures, mesh-viewing utilities for OpenGL and GLSL, and many
+core functions for matrix manipulation which make Eigen feel a lot more like
+MATLAB."""
     topics = ("geometry", "matrices", "algorithms")
 
     settings = "os", "compiler", "build_type", "arch"
@@ -63,7 +65,7 @@ class LibiglConan(ConanFile):
                               """project(libigl)
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
-# libIGL must fine the Eigen3 library imported by conan
+# libIGL must find the Eigen3 library imported by conan
 # otherwise it downloads a own copy from internet
 find_package(Eigen3 REQUIRED) """)
 

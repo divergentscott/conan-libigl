@@ -1,5 +1,6 @@
 from cpt.packager import ConanMultiPackager
 
+
 def build_conf(multi_options, **kw):
     items = []
     for options in multi_options:
@@ -11,8 +12,12 @@ def build_conf(multi_options, **kw):
 
 
 if __name__ == "__main__":
+    options = [
+        {"libigl:static_library": False},
+        {"libigl:static_library": True},
+    ]
     builder = ConanMultiPackager()
-    builder.items = build_conf(multi_options=[{"libigl:static_library": False}, {"libigl:static_library": True}],
+    builder.items = build_conf(multi_options=options,
                                pure_c=False,
                                shared_options_name=False)
     builder.run()
