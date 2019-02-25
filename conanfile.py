@@ -1,5 +1,8 @@
+import os
 import re
+import subprocess
 from conans import ConanFile, CMake, tools
+from contextlib import contextmanager
 
 COMMIT_ID = None
 
@@ -23,6 +26,14 @@ if COMMIT_ID is None:
     })
 
     _package_default_options["commit_id"] = ""
+
+
+@contextmanager
+def chdir(d):
+    curr = os.getcwd()
+    os.chdir(d)
+    yield
+    os.chdir(curr)
 
 
 class LibiglConan(ConanFile):
@@ -52,17 +63,38 @@ MATLAB."""
 
     requires = ("eigen/3.3.5@conan/stable",)
 
+    exports = "fix_static_build.patch",
+
     def source(self):
-        git = tools.Git()
+        git = tools.Git(folder="libigl")
         git.clone("https://github.com/libigl/libigl.git")
 
         cid = COMMIT_ID or self.options.commit_id
         if cid:
             git.checkout(COMMIT_ID)
+        print("using commit:", git.get_commit())
 
-        tools.replace_in_file("CMakeLists.txt",
-                              "project(libigl)",
-                              """project(libigl)
+        print("patching libigl to fixing the static build")
+        # this fix enable the static build on 32bit target where sizeof(size_t)
+        # != sizeof(unsigned int)
+        # The bug is in the explicit instantiation of some template functions
+        # that does not perfectly match their declarations (but this is
+        # a no issue on a 64bit platform because the two types are the same ).
+        self._fix_static_build()
+
+        self._patch_cmake_project()
+
+    def _fix_static_build(self):
+        patch = open("fix_static_build.patch", mode="rb")
+        with chdir("libigl"):
+            subprocess.run(args=["patch", "-p1"],
+                           input=patch.read())
+
+    def _patch_cmake_project(self):
+        with chdir("libigl"):
+            tools.replace_in_file("CMakeLists.txt",
+                                  "project(libigl)",
+                                  """project(libigl)
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 # libIGL must find the Eigen3 library imported by conan
@@ -100,7 +132,7 @@ find_package(Eigen3 REQUIRED) """)
         cmake.definitions["LIBIGL_WITH_XML"] = "OFF"
         cmake.definitions["LIBIGL_WITH_PYTHON"] = "OFF"
 
-        cmake.configure()
+        cmake.configure(source_folder="libigl")
         return cmake
 
     def build(self):
@@ -108,14 +140,12 @@ find_package(Eigen3 REQUIRED) """)
         make.build()
 
     def package(self):
-        # self.copy("*.h", dst="include", src="include")
-        # self.copy("*.cpp", dst="include", src="include")
-        # self.copy("LICENSE*", dst="licenses")
         make = self._configure_cmake()
         make.install()
 
     def package_info(self):
         self.cpp_info.cppflags = ["-pthread"]
+
         if self.options.static_library:
             self.cpp_info.libdirs = ["lib"]
             self.cpp_info.libs = ["libigl.a"]
