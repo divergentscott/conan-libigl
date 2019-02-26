@@ -1,17 +1,33 @@
 #!/bin/bash
 set -euo pipefail
+BRANCH=${1:-}
 REPOSITORY=https://api.bintray.com/conan/dvd/dvd
-PACKAGE_VERSION=${CONAN_REFERENCE/libigl\//}
 
-echo "* Adding a new repository: ${REPOSITORY} (username=${CONAN_LOGIN_USERNAME}"
+PACKAGE_VERSION=$(grep "^PACKAGE_VERSION =" conanfile.py)
+extract_version="PACKAGE_VERSION = \"(.*)\""
+if [[ ${PACKAGE_VERSION} =~ ${extract_version} ]]; then
+	PACKAGE_VERSION=${BASH_REMATCH[1]}
+	echo "* package version: ${PACKAGE_VERSION}"
+else
+	echo "! cannot extract the package version from the conan file"
+	exit 1
+fi
+
+if [[ ! (${BRANCH} == "master" || ${BRANCH} =~ ^release-) ]]; then
+	echo "* upload skipped beacuse branch \"${BRANCH}\" is not master nor release-*"
+	exit 0
+fi
+
+CONAN_REFERENCE=libigl/${PACKAGE_VERSION}@dvd/stable
+echo "* conan reference: ${CONAN_REFERENCE}"
+
+echo "* Adding a new repository: ${REPOSITORY} (username=${CONAN_LOGIN_USERNAME})"
 conan remote add bintray ${REPOSITORY}
-
-echo "XXX ${CONAN_CHANNEL}"
 
 if [[ ${PACKAGE_VERSION} == "git" ]]; then
 	echo "* package version: git; uploading only the recipe"
-	conan upload libigl/git@dvd/stable -r bintray
+	conan upload ${CONAN_REFERENCE} -r bintray
 else
 	echo "* package version: ${PACKAGE_VERSION}; uploading both the recipe and the binaries"
-	conan upload libigl/git@dvd/stable -r bintray --all
+	conan upload ${CONAN_REFERENCE} -r bintray --all
 fi

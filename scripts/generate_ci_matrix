@@ -1,0 +1,120 @@
+#!/usr/bin/python3
+
+compilers = [
+    ("gcc", "8", "conanio/gcc8"),
+    ("gcc", "7", "conanio/gcc7"),
+    ("gcc", "6", "conanio/gcc6"),
+    ("clang", "7.0", "conanio/clang7"),
+    ("clang", "6.0", "conanio/clang60"),
+    ("clang", "5.0", "conanio/clang50"),
+]
+
+
+def global_variables(f):
+    f.write("""
+variables:
+    CONAN_USERNAME: "dvd"
+    CONAN_CHANNEL: "testing"
+    CONAN_LOGIN_USERNAME: "dvd"
+""")
+
+
+def stages(f):
+    f.write("""
+stages:
+  - header_only
+  - static_build
+""")
+
+
+def build_template(f):
+    f.write("""
+.build-template: &build-template
+  before_script:
+    - sudo pip install --upgrade conan_package_tools
+    - conan user
+  script:
+    - python build.py
+    - ./scripts/upload_to_bintray $CI_COMMIT_REF_NAME
+""")
+
+
+def compile_job(f, compiler, version, image, pages=6):
+    assert compiler in ("gcc", "clang")
+
+    tpl = """
+{compiler}-{version}:header_only:
+  image: {image}
+  stage: header_only
+  variables:
+    {conan_compiler}
+    PACKAGE_BUILD_STATIC_LIB: "0"
+  <<: *build-template
+"""
+    if compiler == "gcc":
+        conan_compiler = 'CONAN_GCC_VERSIONS: "{}"'.format(version)
+    else:
+        conan_compiler = 'CONAN_CLANG_VERSIONS: "{}"'.format(version)
+    f.write(tpl.format(compiler=compiler,
+                       version=version,
+                       image=image,
+                       conan_compiler=conan_compiler))
+
+    jobs = []
+    tpl = """
+{job_name}:
+    image: {image}
+    stage: static_build
+    variables:
+        {conan_compiler}
+        CONAN_TOTAL_PAGES: "{pages}"
+        CONAN_CURRENT_PAGE: "{page}"
+        PACKAGE_BUILD_STATIC_LIB: "1"
+    dependencies:
+        - {compiler}-{version}:header_only
+    <<: *build-template
+"""
+    for page in range(1, pages+1):
+        job_name = "{}-{}:build{}".format(compiler, version, page)
+        jobs.append(job_name)
+        f.write(tpl.format(compiler=compiler,
+                           version=version,
+                           image=image,
+                           job_name=job_name,
+                           conan_compiler=conan_compiler,
+                           pages=pages,
+                           page=page))
+
+    return jobs
+
+
+def upload_job(f, compile_jobs):
+    tpl = """
+upload:
+  image: conanio/gcc8
+  stage: upload
+  only:
+    - master
+    - /^release-.*$/
+  script:
+      - ./scripts/upload_to_bintray
+  dependencies:
+"""
+    dependencies = []
+    for j in compile_jobs:
+        dependencies.append("    - {}".format(j))
+    f.write(tpl)
+    f.write("\n".join(dependencies))
+    f.write("\n")
+
+
+if __name__ == "__main__":
+    import sys
+
+    f = sys.stdout
+    global_variables(f)
+    stages(f)
+    build_template(f)
+    jobs = []
+    for (compiler, version, image) in compilers:
+        jobs.extend(compile_job(f, compiler, version, image))
