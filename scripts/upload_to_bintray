@@ -1,0 +1,17 @@
+#!/bin/bash
+set -euo pipefail
+REPOSITORY=https://api.bintray.com/conan/dvd/dvd
+PACKAGE_VERSION=${CONAN_REFERENCE/libigl\//}
+
+echo "* Adding a new repository: ${REPOSITORY} (username=${CONAN_LOGIN_USERNAME}"
+conan remote add bintray ${REPOSITORY}
+
+echo "XXX ${CONAN_CHANNEL}"
+
+if [[ ${PACKAGE_VERSION} == "git" ]]; then
+	echo "* package version: git; uploading only the recipe"
+	conan upload libigl/git@dvd/stable -r bintray
+else
+	echo "* package version: ${PACKAGE_VERSION}; uploading both the recipe and the binaries"
+	conan upload libigl/git@dvd/stable -r bintray --all
+fi

@@ -178,10 +178,11 @@ gcc-8:build0:
 upload:
     image: conanio/gcc8
     stage: upload
+    only:
+      - master
+      - /^release-.*$/
     script:
-        - conan
-        - conan search
-        - conan search libigl/git@dvd/stable
+        - ./scripts/upload_to_bintray
     artifacts:
       paths:
         - .conan
