@@ -1,5 +1,4 @@
 import os
-import re
 import subprocess
 from conans import ConanFile, CMake, tools
 from contextlib import contextmanager

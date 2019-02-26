@@ -14,33 +14,25 @@ def build_conf(multi_options, **kw):
 
 def filter_conf(cfg, items):
     def f(build):
-        if not cfg["build_static"] and build.options["libigl:static_library"]:
-            return False
-        if not cfg["build_libcxx"] and build.settings["compiler.libcxx"] == "libstdc++":
-            return False
-        if not cfg["build_libcxx11"] and build.settings["compiler.libcxx"] in ("libstdc++11", "libc++"):
-            return False
-        return True
+        if not cfg["build_static"] and not build.options["libigl:static_library"]:
+            return True
+        if cfg["build_static"] and build.options["libigl:static_library"]:
+            return True
+        return False
     return filter(f, items)
 
 
 if __name__ == "__main__":
-    cfg = {
-        "build_static": False,
-        "build_libcxx11": False,
-        "build_libcxx": False,
-    }
-
     env = os.environ
-    if env.get("PACKAGE_BUILD_STATIC_LIB") == "1":
-        cfg["build_static"] = True
-        cfg["build_libcxx11"] = env.get("PACKAGE_BUILD_LIBCXX11_ABI") == "1"
-        cfg["build_libcxx"] = env.get("PACKAGE_BUILD_LIBCXX_ABI") == "1"
+    cfg = {
+        "build_static": env.get("PACKAGE_BUILD_STATIC_LIB") == "1",
+    }
 
     options = [
         {"libigl:static_library": False},
         {"libigl:static_library": True},
     ]
+
     builder = ConanMultiPackager()
     builder.items = filter_conf(
         cfg,

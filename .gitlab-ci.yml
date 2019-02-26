@@ -4,6 +4,7 @@ variables:
     CONAN_REFERENCE: "libigl/git"
     CONAN_CHANNEL: "testing"
     CONAN_LOGIN_USERNAME: "dvd"
+    CONAN_USER_HOME: "$CI_PROJECT_DIR/.conan"
 
 .build-template: &build-template
     before_script:
@@ -15,6 +16,7 @@ variables:
 stages:
     - header_only
     - static_build
+    - upload
 
 # gcc-4.9:
     # image: conanio/gcc49
@@ -43,32 +45,105 @@ stages:
 gcc-8:header_only:
     image: conanio/gcc8
     stage: header_only
+    artifacts:
+      paths:
+        - .conan
+      expire_in: 1 day
     variables:
         CONAN_GCC_VERSIONS: "8"
         PACKAGE_BUILD_STATIC_LIB: "0"
     <<: *build-template
 
-gcc-8:build11:
+gcc-8:build0:
     image: conanio/gcc8
     stage: static_build
+    artifacts:
+      paths:
+        - .conan
+      expire_in: 1 day
     variables:
         CONAN_GCC_VERSIONS: "8"
+        CONAN_TOTAL_PAGES: "6"
+        CONAN_CURRENT_PAGE: "1"
         PACKAGE_BUILD_STATIC_LIB: "1"
-        PACKAGE_BUILD_LIBCXX11_ABI: "1"
     dependencies:
         - gcc-8:header_only
     <<: *build-template
 
-gcc-8:build:
-    image: conanio/gcc8
-    stage: static_build
-    variables:
-        CONAN_GCC_VERSIONS: "8"
-        PACKAGE_BUILD_STATIC_LIB: "1"
-        PACKAGE_BUILD_LIBCXX_ABI: "1"
-    dependencies:
-        - gcc-8:header_only
-    <<: *build-template
+# gcc-8:build1:
+#     image: conanio/gcc8
+#     stage: static_build
+#     artifacts:
+#         paths:
+#             - .conan
+#     variables:
+#         CONAN_GCC_VERSIONS: "8"
+#         CONAN_TOTAL_PAGES: "6"
+#         CONAN_CURRENT_PAGE: "2"
+#         PACKAGE_BUILD_STATIC_LIB: "1"
+#     dependencies:
+#         - gcc-8:header_only
+#     <<: *build-template
+
+# gcc-8:build2:
+#     image: conanio/gcc8
+#     stage: static_build
+#     artifacts:
+#         paths:
+#             - .conan
+#     variables:
+#         CONAN_GCC_VERSIONS: "8"
+#         CONAN_TOTAL_PAGES: "6"
+#         CONAN_CURRENT_PAGE: "3"
+#         PACKAGE_BUILD_STATIC_LIB: "1"
+#     dependencies:
+#         - gcc-8:header_only
+#     <<: *build-template
+
+# gcc-8:build3:
+#     image: conanio/gcc8
+#     stage: static_build
+#     artifacts:
+#         paths:
+#             - .conan
+#     variables:
+#         CONAN_GCC_VERSIONS: "8"
+#         CONAN_TOTAL_PAGES: "6"
+#         CONAN_CURRENT_PAGE: "4"
+#         PACKAGE_BUILD_STATIC_LIB: "1"
+#     dependencies:
+#         - gcc-8:header_only
+#     <<: *build-template
+
+# gcc-8:build4:
+#     image: conanio/gcc8
+#     stage: static_build
+#     artifacts:
+#         paths:
+#             - .conan
+#     variables:
+#         CONAN_GCC_VERSIONS: "8"
+#         CONAN_TOTAL_PAGES: "6"
+#         CONAN_CURRENT_PAGE: "5"
+#         PACKAGE_BUILD_STATIC_LIB: "1"
+#     dependencies:
+#         - gcc-8:header_only
+#     <<: *build-template
+
+# gcc-8:build5:
+#     image: conanio/gcc8
+#     stage: static_build
+#     artifacts:
+#         paths:
+#             - .conan
+#     variables:
+#         CONAN_GCC_VERSIONS: "8"
+#         CONAN_TOTAL_PAGES: "6"
+#         CONAN_CURRENT_PAGE: "6"
+#         PACKAGE_BUILD_STATIC_LIB: "1"
+#     dependencies:
+#         - gcc-8:header_only
+#     <<: *build-template
 
 # clang-3.9:
 #     image: conanio/clang39
@@ -100,3 +175,21 @@ gcc-8:build:
 #         CONAN_CLANG_VERSIONS: "7.0"
 #     <<: *build-template
 
+upload:
+    image: conanio/gcc8
+    stage: upload
+    script:
+        - conan
+        - conan search
+        - conan search libigl/git@dvd/stable
+    artifacts:
+      paths:
+        - .conan
+      expire_in: 1 day
+    dependencies:
+        - gcc-8:build0
+        # - gcc-8:build1
+        # - gcc-8:build2
+        # - gcc-8:build3
+        # - gcc-8:build4
+        # - gcc-8:build5
