@@ -4,13 +4,8 @@ import subprocess
 from conans import ConanFile, CMake, tools
 from contextlib import contextmanager
 
+PACKAGE_VERSION = "git"
 COMMIT_ID = None
-
-_package_version = COMMIT_ID if COMMIT_ID is not None else "git"
-if COMMIT_ID and re.match(r"^v\d", _package_version):
-    # COMMIT_ID is something like "v2.0.0"
-    # I drop the 'v' so that the package name will be: libigl/2.0.0
-    _package_version = COMMIT_ID[1:]
 
 _package_options = {
     "static_library": [True, False],
@@ -20,7 +15,7 @@ _package_default_options = {
     "static_library": False,
 }
 
-if COMMIT_ID is None:
+if PACKAGE_VERSION == "git":
     _package_options.update({
         "commit_id": "ANY",
     })
@@ -38,11 +33,11 @@ def chdir(d):
 
 class LibiglConan(ConanFile):
     name = "libigl"
-    version = _package_version
+    version = PACKAGE_VERSION
     license = "MPL2"
 
-    author = "<Put your name here> <And your email here>"
-    url = "<Package recipe repository url here, for issues about the package>"
+    author = "dvd <dvd+conan@gnx.it>"
+    url = "https://gitlab.com/dvd0101/conan-libigl"
 
     homepage = "https://libigl.github.io/"
     description = """libigl is a simple C++ geometry processing library.
@@ -69,12 +64,12 @@ MATLAB."""
         git = tools.Git(folder="libigl")
         git.clone("https://github.com/libigl/libigl.git")
 
-        cid = COMMIT_ID or self.options.commit_id
+        cid = COMMIT_ID if PACKAGE_VERSION != "git" else self.options.commit_id
         if cid:
             git.checkout(COMMIT_ID)
         print("using commit:", git.get_commit())
 
-        print("patching libigl to fixing the static build")
+        print("patching libigl to fix the static build")
         # this fix enable the static build on 32bit target where sizeof(size_t)
         # != sizeof(unsigned int)
         # The bug is in the explicit instantiation of some template functions
