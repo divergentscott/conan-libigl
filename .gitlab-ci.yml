@@ -12,6 +12,10 @@ variables:
     script:
         - python build.py
 
+stages:
+    - header_only
+    - static_build
+
 # gcc-4.9:
     # image: conanio/gcc49
     # variables:
@@ -36,10 +40,34 @@ variables:
     #     CONAN_GCC_VERSIONS: "7"
     # <<: *build-template
 
-gcc-8:
+gcc-8:header_only:
     image: conanio/gcc8
+    stage: header_only
     variables:
         CONAN_GCC_VERSIONS: "8"
+        PACKAGE_BUILD_STATIC_LIB: "0"
+    <<: *build-template
+
+gcc-8:build11:
+    image: conanio/gcc8
+    stage: static_build
+    variables:
+        CONAN_GCC_VERSIONS: "8"
+        PACKAGE_BUILD_STATIC_LIB: "1"
+        PACKAGE_BUILD_LIBCXX11_ABI: "1"
+    dependencies:
+        - gcc-8:header_only
+    <<: *build-template
+
+gcc-8:build:
+    image: conanio/gcc8
+    stage: static_build
+    variables:
+        CONAN_GCC_VERSIONS: "8"
+        PACKAGE_BUILD_STATIC_LIB: "1"
+        PACKAGE_BUILD_LIBCXX_ABI: "1"
+    dependencies:
+        - gcc-8:header_only
     <<: *build-template
 
 # clang-3.9:
@@ -66,9 +94,9 @@ gcc-8:
 #         CONAN_CLANG_VERSIONS: "6.0"
 #     <<: *build-template
 
-clang-7.0:
-    image: conanio/clang7
-    variables:
-        CONAN_CLANG_VERSIONS: "7.0"
-    <<: *build-template
+# clang-7.0:
+#     image: conanio/clang7
+#     variables:
+#         CONAN_CLANG_VERSIONS: "7.0"
+#     <<: *build-template
 
