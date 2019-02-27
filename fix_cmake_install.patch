@@ -1,0 +1,13 @@
+diff --git a/cmake/libigl.cmake b/cmake/libigl.cmake
+index 4b11007a..5dc8017d 100644
+--- a/cmake/libigl.cmake
++++ b/cmake/libigl.cmake
+@@ -437,7 +437,7 @@ function(install_dir_files dir_name)
+   endif()
+ 
+   file(GLOB public_headers
+-    ${CMAKE_CURRENT_SOURCE_DIR}/include/igl${subpath}/*.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/include/igl${subpath}/*.h*
+   )
+ 
+   set(files_to_install ${public_headers})

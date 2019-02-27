@@ -57,7 +57,7 @@ MATLAB."""
 
     requires = ("eigen/3.3.5@conan/stable",)
 
-    exports = "fix_static_build.patch",
+    exports = "fix_static_build.patch", "fix_cmake_install.patch"
 
     def source(self):
         git = tools.Git(folder="libigl")
@@ -76,10 +76,21 @@ MATLAB."""
         # a no issue on a 64bit platform because the two types are the same ).
         self._fix_static_build()
 
+        # this fix the install procedure; cmake is instructed to install only
+        # the headers file ending with `.h` while there are some with the
+        # `.hpp` extension
+        self._fix_cmake_install()
+
         self._patch_cmake_project()
 
     def _fix_static_build(self):
         patch = open("fix_static_build.patch", mode="rb")
+        with chdir("libigl"):
+            subprocess.run(args=["patch", "-p1"],
+                           input=patch.read())
+
+    def _fix_cmake_install(self):
+        patch = open("fix_cmake_install.patch", mode="rb")
         with chdir("libigl"):
             subprocess.run(args=["patch", "-p1"],
                            input=patch.read())
