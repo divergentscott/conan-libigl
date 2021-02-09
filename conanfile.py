@@ -3,25 +3,6 @@ import subprocess
 from conans import ConanFile, CMake, tools
 from contextlib import contextmanager
 
-PACKAGE_VERSION = "git"
-COMMIT_ID = None
-
-_package_options = {
-    "static_library": [True, False],
-}
-
-_package_default_options = {
-    "static_library": False,
-}
-
-if PACKAGE_VERSION == "git":
-    _package_options.update({
-        "commit_id": "ANY",
-    })
-
-    _package_default_options["commit_id"] = ""
-
-
 @contextmanager
 def chdir(d):
     curr = os.getcwd()
@@ -32,11 +13,12 @@ def chdir(d):
 
 class LibiglConan(ConanFile):
     name = "libigl"
-    version = PACKAGE_VERSION
+    version = "0.1"
     license = "MPL2"
 
     author = "dvd <dvd+conan@gnx.it>"
     url = "https://gitlab.com/dvd0101/conan-libigl"
+    commit_id = "3cb4894eaf8ea4610467189ca292be349425d44b"
 
     homepage = "https://libigl.github.io/"
     description = """libigl is a simple C++ geometry processing library.
@@ -50,38 +32,34 @@ MATLAB."""
     topics = ("geometry", "matrices", "algorithms")
 
     settings = "os", "compiler", "build_type", "arch"
-    options = _package_options
-    default_options = _package_default_options
+    options = {"static_library": [True, False]}
+    default_options = {"static_library": False}
 
     generators = "cmake"
 
-    requires = ("eigen/3.3.5@conan/stable",)
+    requires = ("eigen/3.3.7@d3d/testing",)
 
     exports = "fix_static_build.patch", "fix_cmake_install.patch"
 
     def source(self):
         git = tools.Git(folder="libigl")
         git.clone("https://github.com/libigl/libigl.git")
-
-        cid = COMMIT_ID if PACKAGE_VERSION != "git" else self.options.commit_id
-        if cid:
-            git.checkout(COMMIT_ID)
+        git.checkout(self.commit_id)
         print("using commit:", git.get_commit())
 
-        print("patching libigl to fix the static build")
         # this fix enable the static build on 32bit target where sizeof(size_t)
         # != sizeof(unsigned int)
         # The bug is in the explicit instantiation of some template functions
         # that does not perfectly match their declarations (but this is
         # a no issue on a 64bit platform because the two types are the same ).
-        self._fix_static_build()
+        # self._fix_static_build()
 
         # this fix the install procedure; cmake is instructed to install only
         # the headers file ending with `.h` while there are some with the
         # `.hpp` extension
-        self._fix_cmake_install()
+        # self._fix_cmake_install()
 
-        self._patch_cmake_project()
+        # self._patch_cmake_project()
 
     def _fix_static_build(self):
         patch = open("fix_static_build.patch", mode="rb")
